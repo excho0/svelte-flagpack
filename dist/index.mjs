@@ -1,34 +1,576 @@
-function noop(){}function is_promise(a){return a&&"object"==typeof a&&"function"==typeof a.then}function run(a){return a()}function blank_object(){return Object.create(null)}function run_all(a){a.forEach(run)}function is_function(a){return"function"==typeof a}function safe_not_equal(c,a){return c==c?c!==a||c&&"object"==typeof c||"function"==typeof c:a==a}let src_url_equal_anchor;function src_url_equal(a,b){return src_url_equal_anchor||(src_url_equal_anchor=document.createElement("a")),src_url_equal_anchor.href=b,a===src_url_equal_anchor.href}function is_empty(a){return 0===Object.keys(a).length}function null_to_empty(a){return null==a?"":a}function append(a,b){a.appendChild(b)}function append_styles(a,b,c){const d=get_root_for_style(a);if(!d.getElementById(b)){const a=element("style");a.id=b,a.textContent=c,append_stylesheet(d,a)}}function get_root_for_style(a){if(!a)return document;const b=a.getRootNode?a.getRootNode():a.ownerDocument;return b&&b.host?b:a.ownerDocument}function append_stylesheet(a,b){append(a.head||a,b)}function insert(a,b,c){a.insertBefore(b,c||null)}function detach(a){a.parentNode.removeChild(a)}function element(a){return document.createElement(a)}function attr(a,b,c){null==c?a.removeAttribute(b):a.getAttribute(b)!==c&&a.setAttribute(b,c)}function children(a){return Array.from(a.childNodes)}let current_component;function set_current_component(a){current_component=a}function get_current_component(){if(!current_component)throw new Error("Function called outside component initialization");return current_component}const dirty_components=[],binding_callbacks=[],render_callbacks=[],flush_callbacks=[],resolved_promise=Promise.resolve();let update_scheduled=!1;function schedule_update(){update_scheduled||(update_scheduled=!0,resolved_promise.then(flush))}function add_render_callback(a){render_callbacks.push(a)}let flushing=!1;const seen_callbacks=new Set;function flush(){if(!flushing){flushing=!0;do{// first, call beforeUpdate functions
-// and update components
-for(let a=0;a<dirty_components.length;a+=1){const b=dirty_components[a];set_current_component(b),update(b.$$)}for(set_current_component(null),dirty_components.length=0;binding_callbacks.length;)binding_callbacks.pop()();// then, once components are updated, call
-// afterUpdate functions. This may cause
-// subsequent updates...
-for(let a=0;a<render_callbacks.length;a+=1){const b=render_callbacks[a];seen_callbacks.has(b)||(seen_callbacks.add(b),b())}render_callbacks.length=0}while(dirty_components.length);for(;flush_callbacks.length;)flush_callbacks.pop()();update_scheduled=!1,flushing=!1,seen_callbacks.clear()}}function update(a){if(null!==a.fragment){a.update(),run_all(a.before_update);const b=a.dirty;a.dirty=[-1],a.fragment&&a.fragment.p(a.ctx,b),a.after_update.forEach(add_render_callback)}}const outroing=new Set;let outros;function group_outros(){outros={r:0,c:[],p:outros// parent group
-}}function check_outros(){outros.r||run_all(outros.c),outros=outros.p}function transition_in(a,b){a&&a.i&&(outroing.delete(a),a.i(b))}function transition_out(a,b,c,d){if(a&&a.o){if(outroing.has(a))return;outroing.add(a),outros.c.push(()=>{outroing.delete(a),d&&(c&&a.d(1),d())}),a.o(b)}}function handle_promise(a,b){function c(a,c,e,f){if(b.token!==d)return;b.resolved=f;let g=b.ctx;e!==void 0&&(g=g.slice(),g[e]=f);const h=a&&(b.current=a)(g);let i=!1;b.block&&(b.blocks?b.blocks.forEach((a,d)=>{d!==c&&a&&(group_outros(),transition_out(a,1,1,()=>{b.blocks[d]===a&&(b.blocks[d]=null)}),check_outros())}):b.block.d(1),h.c(),transition_in(h,1),h.m(b.mount(),b.anchor),i=!0),b.block=h,b.blocks&&(b.blocks[c]=h),i&&flush()}const d=b.token={};if(is_promise(a)){const d=get_current_component();// if we previously had a then/catch block, destroy it
-if(a.then(a=>{set_current_component(d),c(b.then,1,b.value,a),set_current_component(null)},a=>{if(set_current_component(d),c(b.catch,2,b.error,a),set_current_component(null),!b.hasCatch)throw a}),b.current!==b.pending)return c(b.pending,0),!0}else{if(b.current!==b.then)return c(b.then,1,b.value,a),!0;b.resolved=a}}function update_await_block_branch(a,b,c){const d=b.slice(),{resolved:e}=a;a.current===a.then&&(d[a.value]=e),a.current===a.catch&&(d[a.error]=e),a.block.p(d,c)}function mount_component(a,b,c,d){const{fragment:e,on_mount:f,on_destroy:g,after_update:h}=a.$$;e&&e.m(b,c),d||add_render_callback(()=>{const b=f.map(run).filter(is_function);g?g.push(...b):run_all(b),a.$$.on_mount=[]}),h.forEach(add_render_callback)}function destroy_component(a,b){const c=a.$$;null!==c.fragment&&(run_all(c.on_destroy),c.fragment&&c.fragment.d(b),c.on_destroy=c.fragment=null,c.ctx=[])}function make_dirty(a,b){-1===a.$$.dirty[0]&&(dirty_components.push(a),schedule_update(),a.$$.dirty.fill(0)),a.$$.dirty[0|b/31]|=1<<b%31}function init(a,b,c,d,e,f,g,h=[-1]){const i=current_component;set_current_component(a);const j=a.$$={fragment:null,ctx:null,// state
-props:f,update:noop,not_equal:e,bound:blank_object(),// lifecycle
-on_mount:[],on_destroy:[],on_disconnect:[],before_update:[],after_update:[],context:new Map(i?i.$$.context:b.context||[]),// everything else
-callbacks:blank_object(),dirty:h,skip_bound:!1,root:b.target||i.$$.root};g&&g(j.root);let k=!1;if(j.ctx=c?c(a,b.props||{},(b,c,...d)=>{const f=d.length?d[0]:c;return j.ctx&&e(j.ctx[b],j.ctx[b]=f)&&(!j.skip_bound&&j.bound[b]&&j.bound[b](f),k&&make_dirty(a,b)),c}):[],j.update(),k=!0,run_all(j.before_update),j.fragment=!!d&&d(j.ctx),b.target){if(b.hydrate){const a=children(b.target);// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-j.fragment&&j.fragment.l(a),a.forEach(detach)}else// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-j.fragment&&j.fragment.c();b.intro&&transition_in(a.$$.fragment),mount_component(a,b.target,b.anchor,b.customElement),flush()}set_current_component(i)}/**
- * Base class for Svelte components. Used when dev=false.
- */class SvelteComponent{$destroy(){destroy_component(this,1),this.$destroy=noop}$on(a,b){const c=this.$$.callbacks[a]||(this.$$.callbacks[a]=[]);return c.push(b),()=>{const a=c.indexOf(b);-1!==a&&c.splice(a,1)}}$set(a){this.$$set&&!is_empty(a)&&(this.$$.skip_bound=!0,this.$$set(a),this.$$.skip_bound=!1)}}function __variableDynamicImportRuntime0__(a){return new Promise(function(b,c){("function"==typeof queueMicrotask?queueMicrotask:setTimeout)(c.bind(null,new Error("Unknown variable dynamic import: "+a)))})}function add_css(a){append_styles(a,"svelte-1rxzg3v",".flag.svelte-1rxzg3v.svelte-1rxzg3v{display:inline-block;overflow:hidden;position:relative;box-sizing:border-box;align-items:center}.flag.svelte-1rxzg3v img.svelte-1rxzg3v{display:block;width:100%;height:100%;object-fit:cover}.flag.size-s.svelte-1rxzg3v.svelte-1rxzg3v{width:16px;height:12px}.flag.size-s.drop-shadow.svelte-1rxzg3v.svelte-1rxzg3v{box-shadow:0 0 1px 0.5px rgba(0, 0, 0, 0.1)}.flag.size-s.border-radius.svelte-1rxzg3v.svelte-1rxzg3v{border-radius:1px}.flag.size-s.border-radius.border.svelte-1rxzg3v.svelte-1rxzg3v::before{border-radius:1px}.flag.size-m.svelte-1rxzg3v.svelte-1rxzg3v{width:20px;height:15px}.flag.size-m.drop-shadow.svelte-1rxzg3v.svelte-1rxzg3v{box-shadow:0 1px 2px 0 rgba(0, 0, 0, 0.1)}.flag.size-m.border-radius.svelte-1rxzg3v.svelte-1rxzg3v{border-radius:1.5px}.flag.size-m.border-radius.border.svelte-1rxzg3v.svelte-1rxzg3v::before{border-radius:1.5px}.flag.size-l.svelte-1rxzg3v.svelte-1rxzg3v{width:32px;height:24px}.flag.size-l.drop-shadow.svelte-1rxzg3v.svelte-1rxzg3v{box-shadow:0 2px 3px 0 rgba(0, 0, 0, 0.1)}.flag.size-l.border-radius.svelte-1rxzg3v.svelte-1rxzg3v{border-radius:2px}.flag.size-l.border-radius.border.svelte-1rxzg3v.svelte-1rxzg3v::before{border-radius:2px}.flag.border.svelte-1rxzg3v.svelte-1rxzg3v::before{content:'';width:100%;height:100%;position:absolute;display:block;mix-blend-mode:overlay;box-sizing:border-box;border:1px solid rgba(0, 0, 0, 0.5);mix-blend-mode:overlay}.flag.top-down.svelte-1rxzg3v.svelte-1rxzg3v::before{content:'';width:100%;height:100%;position:absolute;display:block;mix-blend-mode:overlay;box-sizing:border-box;background-image:linear-gradient(0deg, rgba(0, 0, 0, 0.3) 2%, rgba(255, 255, 255, 0.7) 100%)}.flag.real-linear.svelte-1rxzg3v.svelte-1rxzg3v::before{content:'';width:100%;height:100%;position:absolute;display:block;mix-blend-mode:overlay;box-sizing:border-box;background-image:linear-gradient(45deg, rgba(0, 0, 0, 0.2) 0%, rgba(39, 39, 39, 0.22) 11%, rgba(255, 255, 255, 0.3) 27%, rgba(0, 0, 0, 0.24) 41%, rgba(0, 0, 0, 0.55) 52%, rgba(255, 255, 255, 0.26) 63%, rgba(0, 0, 0, 0.27) 74%, rgba(255, 255, 255, 0.3) 100%)}.flag.real-circular.svelte-1rxzg3v.svelte-1rxzg3v::before{content:'';width:100%;height:100%;position:absolute;display:block;mix-blend-mode:overlay;box-sizing:border-box;background:radial-gradient(50% 36%, rgba(255, 255, 255, 0.3) 0%, rgba(0, 0, 0, 0.24) 11%, rgba(0, 0, 0, 0.55) 17%, rgba(255, 255, 255, 0.26) 22%, rgba(0, 0, 0, 0.17) 27%, rgba(255, 255, 255, 0.28) 31%, rgba(255, 255, 255, 0) 37%) center calc(50% - 8px)/600% 600%, radial-gradient(50% 123%, rgba(255, 255, 255, 0.3) 25%, rgba(0, 0, 0, 0.24) 48%, rgba(0, 0, 0, 0.55) 61%, rgba(255, 255, 255, 0.26) 72%, rgba(0, 0, 0, 0.17) 80%, rgba(255, 255, 255, 0.28) 88%, rgba(255, 255, 255, 0.3) 100%) center calc(50% - 8px)/600% 600%}")}// (1:0) <script>   import { onMount }
-function create_catch_block(){return{c:noop,m:noop,p:noop,d:noop}}// (35:43)      <img src="{Flag}
-function create_then_block(a){let b,c,d;return{c(){b=element("img"),src_url_equal(b.src,c=/*Flag*/a[8])||attr(b,"src",c),attr(b,"alt",d=`Flag of ${/*code*/a[2]}`),attr(b,"class","svelte-1rxzg3v")},m(a,c){insert(a,b,c)},p(a,e){/*size, code*/5&e&&!src_url_equal(b.src,c=/*Flag*/a[8])&&attr(b,"src",c),/*code*/4&e&&d!==(d=`Flag of ${/*code*/a[2]}`)&&attr(b,"alt",d)},d(a){a&&detach(b)}}}// (1:0) <script>   import { onMount }
-function create_pending_block(){return{c:noop,m:noop,p:noop,d:noop}}function create_fragment(a){let b,c,d,e={ctx:a,current:null,token:null,hasCatch:!1,pending:create_pending_block,then:create_then_block,catch:create_catch_block,value:8};return handle_promise(c=/*importFlag*/a[7](/*size*/a[0],/*code*/a[2]),e),{c(){b=element("div"),e.block.c(),attr(b,"class",d=""+(null_to_empty(`
+// generated during release, do not modify
+const PUBLIC_VERSION="5";"undefined"!=typeof window&&// @ts-ignore
+(window.__svelte||={v:new Set}).v.add("5");let legacy_mode_flag=!1,tracing_mode_flag=!1;function enable_legacy_mode_flag(){legacy_mode_flag=!0}enable_legacy_mode_flag();const PROPS_IS_IMMUTABLE=1,PROPS_IS_RUNES=2,PROPS_IS_UPDATED=4,PROPS_IS_BINDABLE=8,PROPS_IS_LAZY_INITIAL=16,TEMPLATE_FRAGMENT=1,TEMPLATE_USE_IMPORT_NODE=2,UNINITIALIZED=Symbol(),FILENAME=Symbol("filename"),node_env=globalThis.process?.env?.NODE_ENV;// Dev-time component properties
+var DEV=node_env&&!node_env.toLowerCase().startsWith("prod"),is_array=Array.isArray,index_of=Array.prototype.indexOf,define_property=Object.defineProperty,get_descriptor=Object.getOwnPropertyDescriptor,get_descriptors=Object.getOwnPropertyDescriptors,object_prototype=Object.prototype,array_prototype=Array.prototype,get_prototype_of=Object.getPrototypeOf;// Store the references to globals in case someone tries to monkey patch these, causing the below
+// to de-opt (this occurs often when using popular extensions).
+// Adapted from https://github.com/then/is-promise/blob/master/index.js
+// Distributed under MIT License https://github.com/then/is-promise/blob/master/LICENSE
+/**
+ * @template [T=any]
+ * @param {any} value
+ * @returns {value is PromiseLike<T>}
+ */function is_promise(e){return"function"==typeof e?.then}/** @param {Function} fn */function run(e){return e()}/** @param {Array<() => void>} arr */function run_all(e){for(var n=0;n<e.length;n++)e[n]()}const DERIVED=2,EFFECT=4,RENDER_EFFECT=8,BLOCK_EFFECT=16,BRANCH_EFFECT=32,ROOT_EFFECT=64,BOUNDARY_EFFECT=128,UNOWNED=256,DISCONNECTED=512,CLEAN=1024,DIRTY=2048,MAYBE_DIRTY=4096,INERT=8192,DESTROYED=16384,EFFECT_RAN=32768,EFFECT_TRANSPARENT=65536,LEGACY_DERIVED_PROP=131072,INSPECT_EFFECT=262144,HEAD_EFFECT=524288,EFFECT_HAS_DERIVED=1048576,STATE_SYMBOL=Symbol("$state"),STATE_SYMBOL_METADATA=Symbol("$state metadata"),LEGACY_PROPS=Symbol("legacy props"),LOADING_ATTR_SYMBOL=Symbol("");/** 'Transparent' effects do not create a transition boundary *//** Svelte 4 legacy mode props need to be handled with deriveds and be recognized elsewhere, hence the dedicated flag *//** @import { Equals } from '#client' *//** @type {Equals} */function equals(e){return e===this.v}/**
+ * @param {unknown} a
+ * @param {unknown} b
+ * @returns {boolean}
+ */function safe_not_equal(e,n){return e==e?e!==n||null!==e&&"object"==typeof e||"function"==typeof e:n==n}/** @type {Equals} */function safe_equals(e){return!safe_not_equal(e,this.v)}/* This file is generated by scripts/process-messages/index.js. Do not edit! *//**
+ * A derived value cannot reference itself recursively
+ * @returns {never}
+ */function derived_references_self(){if(DEV){const e=new Error(`derived_references_self\nA derived value cannot reference itself recursively\nhttps://svelte.dev/e/derived_references_self`);throw e.name="Svelte error",e}else throw new Error(`https://svelte.dev/e/derived_references_self`)}/**
+ * `%rune%` cannot be used inside an effect cleanup function
+ * @param {string} rune
+ * @returns {never}
+ */function effect_in_teardown(e){if(DEV){const n=new Error(`effect_in_teardown\n\`${e}\` cannot be used inside an effect cleanup function\nhttps://svelte.dev/e/effect_in_teardown`);throw n.name="Svelte error",n}else throw new Error(`https://svelte.dev/e/effect_in_teardown`)}/**
+ * Effect cannot be created inside a `$derived` value that was not itself created inside an effect
+ * @returns {never}
+ */function effect_in_unowned_derived(){if(DEV){const e=new Error(`effect_in_unowned_derived\nEffect cannot be created inside a \`$derived\` value that was not itself created inside an effect\nhttps://svelte.dev/e/effect_in_unowned_derived`);throw e.name="Svelte error",e}else throw new Error(`https://svelte.dev/e/effect_in_unowned_derived`)}/**
+ * `%rune%` can only be used inside an effect (e.g. during component initialisation)
+ * @param {string} rune
+ * @returns {never}
+ */function effect_orphan(e){if(DEV){const n=new Error(`effect_orphan\n\`${e}\` can only be used inside an effect (e.g. during component initialisation)\nhttps://svelte.dev/e/effect_orphan`);throw n.name="Svelte error",n}else throw new Error(`https://svelte.dev/e/effect_orphan`)}/**
+ * Maximum update depth exceeded. This can happen when a reactive block or effect repeatedly sets a new value. Svelte limits the number of nested updates to prevent infinite loops
+ * @returns {never}
+ */function effect_update_depth_exceeded(){if(DEV){const e=new Error(`effect_update_depth_exceeded\nMaximum update depth exceeded. This can happen when a reactive block or effect repeatedly sets a new value. Svelte limits the number of nested updates to prevent infinite loops\nhttps://svelte.dev/e/effect_update_depth_exceeded`);throw e.name="Svelte error",e}else throw new Error(`https://svelte.dev/e/effect_update_depth_exceeded`)}/**
+ * Cannot do `bind:%key%={undefined}` when `%key%` has a fallback value
+ * @param {string} key
+ * @returns {never}
+ */function props_invalid_value(e){if(DEV){const n=new Error(`props_invalid_value\nCannot do \`bind:${e}={undefined}\` when \`${e}\` has a fallback value\nhttps://svelte.dev/e/props_invalid_value`);throw n.name="Svelte error",n}else throw new Error(`https://svelte.dev/e/props_invalid_value`)}/**
+ * The `%rune%` rune is only available inside `.svelte` and `.svelte.js/ts` files
+ * @param {string} rune
+ * @returns {never}
+ */function rune_outside_svelte(e){if(DEV){const n=new Error(`rune_outside_svelte\nThe \`${e}\` rune is only available inside \`.svelte\` and \`.svelte.js/ts\` files\nhttps://svelte.dev/e/rune_outside_svelte`);throw n.name="Svelte error",n}else throw new Error(`https://svelte.dev/e/rune_outside_svelte`)}/**
+ * Property descriptors defined on `$state` objects must contain `value` and always be `enumerable`, `configurable` and `writable`.
+ * @returns {never}
+ */function state_descriptors_fixed(){if(DEV){const e=new Error(`state_descriptors_fixed\nProperty descriptors defined on \`$state\` objects must contain \`value\` and always be \`enumerable\`, \`configurable\` and \`writable\`.\nhttps://svelte.dev/e/state_descriptors_fixed`);throw e.name="Svelte error",e}else throw new Error(`https://svelte.dev/e/state_descriptors_fixed`)}/**
+ * Cannot set prototype of `$state` object
+ * @returns {never}
+ */function state_prototype_fixed(){if(DEV){const e=new Error(`state_prototype_fixed\nCannot set prototype of \`$state\` object\nhttps://svelte.dev/e/state_prototype_fixed`);throw e.name="Svelte error",e}else throw new Error(`https://svelte.dev/e/state_prototype_fixed`)}/**
+ * Reading state that was created inside the same derived is forbidden. Consider using `untrack` to read locally created state
+ * @returns {never}
+ */function state_unsafe_local_read(){if(DEV){const e=new Error(`state_unsafe_local_read\nReading state that was created inside the same derived is forbidden. Consider using \`untrack\` to read locally created state\nhttps://svelte.dev/e/state_unsafe_local_read`);throw e.name="Svelte error",e}else throw new Error(`https://svelte.dev/e/state_unsafe_local_read`)}/**
+ * Updating state inside a derived or a template expression is forbidden. If the value should not be reactive, declare it without `$state`
+ * @returns {never}
+ */function state_unsafe_mutation(){if(DEV){const e=new Error(`state_unsafe_mutation\nUpdating state inside a derived or a template expression is forbidden. If the value should not be reactive, declare it without \`$state\`\nhttps://svelte.dev/e/state_unsafe_mutation`);throw e.name="Svelte error",e}else throw new Error(`https://svelte.dev/e/state_unsafe_mutation`)}/** @import { Derived, Reaction, Signal, Value } from '#client' *//** @type { any } */let tracing_expressions=null;/**
+ * @param {string} label
+ */function get_stack$1(e){let n=Error();const d=n.stack;if(d){const t=d.split("\n"),f=["\n"];for(let e=0;e<t.length;e++){const n=t[e];if("Error"!==n){if(n.includes("validate_each_keys"))return null;n.includes("svelte/src/internal")||f.push(n)}}if(1===f.length)return null;define_property(n,"stack",{value:f.join("\n")}),define_property(n,"name",{// 'Error' suffix is required for stack traces to be rendered properly
+value:`${e}Error`})}return n}/** @import { Derived, Effect, Reaction, Source, Value } from '#client' */let inspect_effects=new Set;/**
+ * @param {Set<any>} v
+ */function set_inspect_effects(e){inspect_effects=e}/**
+ * @template V
+ * @param {V} v
+ * @param {Error | null} [stack]
+ * @returns {Source<V>}
+ */function source(e,n){/** @type {Value} */var d={f:0,// TODO ideally we could skip this altogether, but it causes type errors
+v:e,reactions:null,equals,rv:0,wv:0};return DEV&&tracing_mode_flag&&(d.created=n??get_stack$1("CreatedAt"),d.debug=null),d}/**
+ * @template V
+ * @param {V} initial_value
+ * @param {boolean} [immutable]
+ * @returns {Source<V>}
+ *//*#__NO_SIDE_EFFECTS__*/function mutable_source(e,n=!1){const d=source(e);return n||(d.equals=safe_equals),legacy_mode_flag&&null!==component_context&&null!==component_context.l&&(component_context.l.s??=[]).push(d),d}/**
+ * @template V
+ * @param {Source<V>} source
+ * @param {V} value
+ * @returns {V}
+ */function set(e,n){return null!==active_reaction&&is_runes()&&0!=(active_reaction.f&(DERIVED|BLOCK_EFFECT))&&(// If the source was created locally within the current derived, then
+// we allow the mutation.
+null===derived_sources||!derived_sources.includes(e))&&state_unsafe_mutation(),internal_set(e,n)}/**
+ * @template V
+ * @param {Source<V>} source
+ * @param {V} value
+ * @returns {V}
+ */function internal_set(e,n){if(!e.equals(n)){var d=e.v;if(e.v=n,e.wv=increment_write_version(),DEV&&tracing_mode_flag&&(e.updated=get_stack$1("UpdatedAt"),null!=active_effect&&(e.trace_need_increase=!0,e.trace_v??=d)),mark_reactions(e,DIRTY),is_runes()&&null!==active_effect&&0!=(active_effect.f&CLEAN)&&0==(active_effect.f&BRANCH_EFFECT)&&(null!==new_deps&&new_deps.includes(e)?(set_signal_status(active_effect,DIRTY),schedule_effect(active_effect)):null===untracked_writes?set_untracked_writes([e]):untracked_writes.push(e)),DEV&&0<inspect_effects.size){const e=Array.from(inspect_effects);var i=is_flushing_effect;set_is_flushing_effect(!0);try{for(const n of e)0!=(n.f&CLEAN)&&set_signal_status(n,MAYBE_DIRTY),check_dirtiness(n)&&update_effect(n)}finally{set_is_flushing_effect(i)}inspect_effects.clear()}}return n}/**
+ * @param {Value} signal
+ * @param {number} status should be DIRTY or MAYBE_DIRTY
+ * @returns {void}
+ */function mark_reactions(e,n){var d=e.reactions;if(null!==d)for(var t=is_runes(),f=d.length,u=0;u<f;u++){var r=d[u],s=r.f;// Skip any effects that are already dirty
+if(0==(s&DIRTY)&&(t||r!==active_effect))// In legacy mode, skip the current effect to prevent infinite loops
+{// Inspect effects need to run immediately, so that the stack trace makes sense
+if(DEV&&0!=(s&INSPECT_EFFECT)){inspect_effects.add(r);continue}set_signal_status(r,n),0!=(s&(CLEAN|UNOWNED))&&(0==(s&DERIVED)?schedule_effect(/** @type {Effect} */r):mark_reactions(/** @type {Derived} */r,MAYBE_DIRTY))}// If the signal a) was previously clean or b) is an unowned derived, then mark it
+}}/* This file is generated by scripts/process-messages/index.js. Do not edit! */var bold="font-weight: bold",normal="font-weight: normal";/**
+ * %component% mutated a value owned by %owner%. This is strongly discouraged. Consider passing values to child components with `bind:`, or use a callback instead
+ * @param {string | undefined | null} [component]
+ * @param {string | undefined | null} [owner]
+ */function ownership_invalid_mutation(e,n){DEV?console.warn(`%c[svelte] ownership_invalid_mutation\n%c${e?`${e} mutated a value owned by ${n}. This is strongly discouraged. Consider passing values to child components with \`bind:\`, or use a callback instead`:"Mutating a value outside the component that created it is strongly discouraged. Consider passing values to child components with `bind:`, or use a callback instead"}\nhttps://svelte.dev/e/ownership_invalid_mutation`,bold,normal):console.warn(`https://svelte.dev/e/ownership_invalid_mutation`)}/** @import { TemplateNode } from '#client' *//**
+ * Use this variable to guard everything related to hydration code so it can be treeshaken out
+ * if the user doesn't use the `hydrate` method and these code paths are therefore not needed.
+ */let hydrating=!1;/** @import { ProxyMetadata } from '#client' *//** @type {Record<string, Array<{ start: Location, end: Location, component: Function }>>} */const boundaries={},chrome_pattern=/at (?:.+ \()?(.+):(\d+):(\d+)\)?$/,firefox_pattern=/@(.+):(\d+):(\d+)$/;function get_stack(){const e=new Error().stack;if(!e)return null;const n=[];for(const d of e.split("\n")){let e=chrome_pattern.exec(d)??firefox_pattern.exec(d);e&&n.push({file:e[1],line:+e[2],column:+e[3]})}return n}/**
+ * Determines which `.svelte` component is responsible for a given state change
+ * @returns {Function | null}
+ */function get_component(){// first 4 lines are svelte internals; adjust this number if we change the internal call stack
+const e=get_stack()?.slice(4);if(!e)return null;for(let n=0;n<e.length;n++){const d=e[n],i=boundaries[d.file];if(!i){// If the first entry is not a component, that means the modification very likely happened
+// within a .svelte.js file, possibly triggered by a component. Since these files are not part
+// of the bondaries/component context heuristic, we need to bail in this case, else we would
+// have false positives when the .svelte.ts file provides a state creator function, encapsulating
+// the state and its mutations, and is being called from a component other than the one who
+// called the state creator function.
+if(0===n)return null;continue}for(const e of i){if(null==e.end)return null;if(e.start.line<d.line&&e.end.line>d.line)return e.component}}return null}/**
+ * @param {ProxyMetadata | null} from
+ * @param {ProxyMetadata} to
+ */function widen_ownership(e,n){if(null!==n.owners)for(;e;){if(null===e.owners){n.owners=null;break}for(const d of e.owners)n.owners.add(d);e=e.parent}}/**
+ * @param {ProxyMetadata} metadata
+ * @param {Function} component
+ * @returns {boolean}
+ */function has_owner(e,n){return!(null!==e.owners)||e.owners.has(n)||null!==e.parent&&has_owner(e.parent,n)}/**
+ * @param {ProxyMetadata} metadata
+ * @returns {any}
+ */function get_owner(e){return e?.owners?.values().next().value??get_owner(/** @type {ProxyMetadata} */e.parent)}/**
+ * @param {ProxyMetadata} metadata
+ */function check_ownership(e){const n=get_component();if(n&&!has_owner(e,n)){let d=get_owner(e);// @ts-expect-error
+d[FILENAME]===n[FILENAME]?ownership_invalid_mutation():ownership_invalid_mutation(n[FILENAME],d[FILENAME])}}/** @import { ProxyMetadata, ProxyStateObject, Source } from '#client' *//**
+ * @template T
+ * @param {T} value
+ * @param {ProxyMetadata | null} [parent]
+ * @param {Source<T>} [prev] dev mode only
+ * @returns {T}
+ */function proxy(e,n=null,d){var i=Number.isInteger,t=null;/** @type {Error | null} */// if non-proxyable, or is already a proxy, return `value`
+if(DEV&&tracing_mode_flag&&(t=get_stack$1("CreatedAt")),"object"!=typeof e||null===e||STATE_SYMBOL in e)return e;const f=get_prototype_of(e);if(f!==object_prototype&&f!==array_prototype)return e;/** @type {Map<any, Source<any>>} */var u=new Map,r=is_array(e),a=source(0);r&&u.set("length",source(/** @type {any[]} */e.length,t));/** @type {ProxyMetadata} */var l;if(DEV)if(l={parent:n,owners:null},d){// Reuse owners from previous state; necessary because reassignment is not guaranteed to have correct component context.
+// If no previous proxy exists we play it safe and assume ownerless state
+// @ts-expect-error
+const e=d.v?.[STATE_SYMBOL_METADATA]?.owners;l.owners=e?new Set(e):null}else l.owners=null===n?null===component_context?null:new Set([component_context.function]):new Set;return new Proxy(/** @type {any} */e,{defineProperty(e,n,d){"value"in d&&!1!==d.configurable&&!1!==d.enumerable&&!1!==d.writable||state_descriptors_fixed();var i=u.get(n);return/** @type {V} *//** @type {V} */void 0===i?(i=source(d.value,t),u.set(n,i)):set(i,proxy(d.value,l)),!0},deleteProperty(e,d){var f=u.get(d);if(void 0===f)d in e&&u.set(d,source(UNINITIALIZED,t));else{// When working with arrays, we need to also ensure we update the length when removing
+// an indexed property
+if(r&&"string"==typeof d){var s=/** @type {Source<number>} */u.get("length"),l=+d;i(l)&&l<s.v&&set(s,l)}set(f,UNINITIALIZED),update_version(a)}return!0},get(n,d,i){if(DEV&&d===STATE_SYMBOL_METADATA)return l;if(d===STATE_SYMBOL)return e;var f=u.get(d),r=d in n;// create a source, but only if it's an own property and not a prototype property
+if(void 0===f&&(!r||get_descriptor(n,d)?.writable)&&(f=source(proxy(r?n[d]:UNINITIALIZED,l),t),u.set(d,f)),void 0!==f){var a=get(f);// In case of something like `foo = bar.map(...)`, foo would have ownership
+// of the array itself, while the individual items would have ownership
+// of the component that created bar. That means if we later do `foo[0].baz = 42`,
+// we could get a false-positive ownership violation, since the two proxies
+// are not connected to each other via the parent metadata relationship.
+// For this reason, we need to widen the ownership of the children
+// upon access when we detect they are not connected.
+if(DEV){/** @type {ProxyMetadata | undefined} */var o=a?.[STATE_SYMBOL_METADATA];o&&o?.parent!==l&&widen_ownership(l,o)}return a===UNINITIALIZED?void 0:a}return Reflect.get(n,d,i)},getOwnPropertyDescriptor(e,n){var d=Reflect.getOwnPropertyDescriptor(e,n);if(d&&"value"in d){var i=u.get(n);i&&(d.value=get(i))}else if(void 0===d){var t=u.get(n),f=t?.v;if(void 0!==t&&f!==UNINITIALIZED)return{enumerable:!0,configurable:!0,value:f,writable:!0}}return d},has(e,n){if(DEV&&n===STATE_SYMBOL_METADATA)return!0;if(n===STATE_SYMBOL)return!0;var d=u.get(n),i=void 0!==d&&d.v!==UNINITIALIZED||Reflect.has(e,n);if(void 0!==d||null!==active_effect&&(!i||get_descriptor(e,n)?.writable)){void 0===d&&(d=source(i?proxy(e[n],l):UNINITIALIZED,t),u.set(n,d));var f=get(d);if(f===UNINITIALIZED)return!1}return i},set(e,d,f,o){var p=u.get(d),c=d in e;// variable.length = value -> clear all signals with index >= value
+if(r&&"length"===d)for(var h,v=f;v</** @type {Source<number>} */p.v;v+=1)h=u.get(v+""),void 0===h?v in e&&(h=source(UNINITIALIZED,t),u.set(v+"",h)):set(h,UNINITIALIZED);// If we haven't yet created a source for this property, we need to ensure
+// we do so otherwise if we read it later, then the write won't be tracked and
+// the heuristics of effects will be different vs if we had read the proxied
+// object property before writing to that property.
+if(void 0===p?(!c||get_descriptor(e,d)?.writable)&&(p=source(void 0,t),set(p,proxy(f,l)),u.set(d,p)):(c=p.v!==UNINITIALIZED,set(p,proxy(f,l))),DEV){/** @type {ProxyMetadata | undefined} */var g=f?.[STATE_SYMBOL_METADATA];g&&g?.parent!==l&&widen_ownership(l,g),check_ownership(l)}var m=Reflect.getOwnPropertyDescriptor(e,d);// Set the new value before updating any signals so that any listeners get the new value
+if(m?.set&&m.set.call(o,f),!c){// If we have mutated an array directly, we might need to
+// signal that length has also changed. Do it before updating metadata
+// to ensure that iterating over the array as a result of a metadata update
+// will not cause the length to be out of sync.
+if(r&&"string"==typeof d){var w=/** @type {Source<number>} */u.get("length"),_=+d;i(_)&&_>=w.v&&set(w,_+1)}update_version(a)}return!0},ownKeys(e){get(a);var n=Reflect.ownKeys(e).filter(e=>{var n=u.get(e);return void 0===n||n.v!==UNINITIALIZED});for(var[d,i]of u)i.v===UNINITIALIZED||d in e||n.push(d);return n},setPrototypeOf(){state_prototype_fixed()}})}/**
+ * @param {Source<number>} signal
+ * @param {1 | -1} [d]
+ */function update_version(e,n=1){set(e,e.v+n)}/** @import { TemplateNode } from '#client' *//** @type {() => Node | null} */var first_child_getter,next_sibling_getter;/** @type {() => Node | null} *//**
+ * @template {Node} N
+ * @param {N} node
+ * @returns {Node | null}
+ *//*@__NO_SIDE_EFFECTS__*/function get_first_child(e){return first_child_getter.call(e)}/**
+ * @template {Node} N
+ * @param {N} node
+ * @returns {Node | null}
+ *//*@__NO_SIDE_EFFECTS__*/function get_next_sibling(e){return next_sibling_getter.call(e)}/**
+ * Don't mark this as side-effect-free, hydration needs to walk all nodes
+ * @template {Node} N
+ * @param {N} node
+ * @param {boolean} is_text
+ * @returns {Node | null}
+ */function child(e){return get_first_child(e)}/** @import { Derived, Effect } from '#client' *//**
+ * @template V
+ * @param {() => V} fn
+ * @returns {Derived<V>}
+ *//*#__NO_SIDE_EFFECTS__*/function derived(e){var n=DERIVED|DIRTY;null===active_effect?n|=UNOWNED:active_effect.f|=EFFECT_HAS_DERIVED;var d=null!==active_reaction&&0!=(active_reaction.f&DERIVED)?(/** @type {Derived} */active_reaction):null;/** @type {Derived<V>} */const i={children:null,ctx:component_context,deps:null,equals,f:n,fn:e,reactions:null,rv:0,v:(/** @type {V} */null),wv:0,parent:d??active_effect};return DEV&&tracing_mode_flag&&(i.created=get_stack$1("CreatedAt")),null!==d&&(d.children??=[]).push(i),i}/**
+ * @template V
+ * @param {() => V} fn
+ * @returns {Derived<V>}
+ *//*#__NO_SIDE_EFFECTS__*/function derived_safe_equal(e){const n=derived(e);return n.equals=safe_equals,n}/**
+ * @param {Derived} derived
+ * @returns {void}
+ */function destroy_derived_children(e){var n=e.children;if(null!==n){e.children=null;for(var d,t=0;t<n.length;t+=1)d=n[t],0==(d.f&DERIVED)?destroy_effect(/** @type {Effect} */d):destroy_derived(/** @type {Derived} */d)}}/**
+ * The currently updating deriveds, used to detect infinite recursion
+ * in dev mode and provide a nicer error than 'too much recursion'
+ * @type {Derived[]}
+ */let stack=[];/**
+ * @param {Derived} derived
+ * @returns {Effect | null}
+ */function get_derived_parent_effect(e){for(var n=e.parent;null!==n;){if(0==(n.f&DERIVED))return/** @type {Effect} */n;n=n.parent}return null}/**
+ * @template T
+ * @param {Derived} derived
+ * @returns {T}
+ */function execute_derived(e){var n,d=active_effect;if(set_active_effect(get_derived_parent_effect(e)),DEV){let i=inspect_effects;set_inspect_effects(new Set);try{stack.includes(e)&&derived_references_self(),stack.push(e),destroy_derived_children(e),n=update_reaction(e)}finally{set_active_effect(d),set_inspect_effects(i),stack.pop()}}else try{destroy_derived_children(e),n=update_reaction(e)}finally{set_active_effect(d)}return n}/**
+ * @param {Derived} derived
+ * @returns {void}
+ */function update_derived(e){var n=execute_derived(e),d=(skip_reaction||0!=(e.f&UNOWNED))&&null!==e.deps?MAYBE_DIRTY:CLEAN;set_signal_status(e,d),e.equals(n)||(e.v=n,e.wv=increment_write_version())}/**
+ * @param {Derived} derived
+ * @returns {void}
+ */function destroy_derived(e){destroy_derived_children(e),remove_reactions(e,0),set_signal_status(e,DESTROYED),e.v=e.children=e.deps=e.ctx=e.reactions=null}/** @import { ComponentContext, ComponentContextLegacy, Derived, Effect, TemplateNode, TransitionManager } from '#client' *//**
+ * @param {'$effect' | '$effect.pre' | '$inspect'} rune
+ */function validate_effect(e){null===active_effect&&null===active_reaction&&effect_orphan(e),null!==active_reaction&&0!=(active_reaction.f&UNOWNED)&&effect_in_unowned_derived(),is_destroying_effect&&effect_in_teardown(e)}/**
+ * @param {Effect} effect
+ * @param {Effect} parent_effect
+ */function push_effect(e,n){var d=n.last;null===d?n.last=n.first=e:(d.next=e,e.prev=d,n.last=e)}/**
+ * @param {number} type
+ * @param {null | (() => void | (() => void))} fn
+ * @param {boolean} sync
+ * @param {boolean} push
+ * @returns {Effect}
+ */function create_effect(e,n,d,i=!0){var t=0!=(e&ROOT_EFFECT),f=active_effect;if(DEV)// Ensure the parent is never an inspect effect
+for(;null!==f&&0!=(f.f&INSPECT_EFFECT);)f=f.parent;/** @type {Effect} */var u={ctx:component_context,deps:null,deriveds:null,nodes_start:null,nodes_end:null,f:e|DIRTY,first:null,fn:n,last:null,next:null,parent:t?null:f,prev:null,teardown:null,transitions:null,wv:0};if(DEV&&(u.component_function=dev_current_component_function),d){var r=is_flushing_effect;try{set_is_flushing_effect(!0),update_effect(u),u.f|=EFFECT_RAN}catch(n){throw destroy_effect(u),n}finally{set_is_flushing_effect(r)}}else null!==n&&schedule_effect(u);// if an effect has no dependencies, no DOM and no teardown function,
+// don't bother adding it to the effect tree
+var s=d&&null===u.deps&&null===u.first&&null===u.nodes_start&&null===u.teardown&&0==(u.f&EFFECT_HAS_DERIVED);if(!s&&!t&&i&&(null!==f&&push_effect(u,f),null!==active_reaction&&0!=(active_reaction.f&DERIVED)))// if we're in a derived, add the effect there too
+{var a=/** @type {Derived} */active_reaction;(a.children??=[]).push(u)}return u}/**
+ * Internal representation of `$effect(...)`
+ * @param {() => void | (() => void)} fn
+ */function user_effect(e){validate_effect("$effect");// Non-nested `$effect(...)` in a component should be deferred
+// until the component is mounted
+var n=null!==active_effect&&0!=(active_effect.f&BRANCH_EFFECT)&&null!==component_context&&!component_context.m;if(DEV&&define_property(e,"name",{value:"$effect"}),n){var d=/** @type {ComponentContext} */component_context;(d.e??=[]).push({fn:e,effect:active_effect,reaction:active_reaction})}else{var i=effect(e);return i}}/**
+ * Internal representation of `$effect.pre(...)`
+ * @param {() => void | (() => void)} fn
+ * @returns {Effect}
+ */function user_pre_effect(e){return validate_effect("$effect.pre"),DEV&&define_property(e,"name",{value:"$effect.pre"}),render_effect(e)}/**
+ * @param {() => void | (() => void)} fn
+ * @returns {Effect}
+ */function effect(e){return create_effect(EFFECT,e,!1)}/**
+ * Internal representation of `$: ..`
+ * @param {() => any} deps
+ * @param {() => void | (() => void)} fn
+ */function legacy_pre_effect(e,n){var d=/** @type {ComponentContextLegacy} */component_context,i={effect:null,ran:!1};/** @type {{ effect: null | Effect, ran: boolean }} */d.l.r1.push(i),i.effect=render_effect(()=>{e();// If this legacy pre effect has already run before the end of the reset, then
+// bail out to emulate the same behavior.
+i.ran||(i.ran=!0,set(d.l.r2,!0),untrack(n))})}function legacy_pre_effect_reset(){var e=/** @type {ComponentContextLegacy} */component_context;render_effect(()=>{if(get(e.l.r2)){// Run dirty `$:` statements
+for(var n of e.l.r1){var d=n.effect;// If the effect is CLEAN, then make it MAYBE_DIRTY. This ensures we traverse through
+// the effects dependencies and correctly ensure each dependency is up-to-date.
+0!=(d.f&CLEAN)&&set_signal_status(d,MAYBE_DIRTY),check_dirtiness(d)&&update_effect(d),n.ran=!1}e.l.r2.v=!1}})}/**
+ * @param {() => void | (() => void)} fn
+ * @returns {Effect}
+ */function render_effect(e){return create_effect(RENDER_EFFECT,e,!0)}/**
+ * @param {() => void | (() => void)} fn
+ * @returns {Effect}
+ */function template_effect(e){return DEV&&define_property(e,"name",{value:"{expression}"}),block(e)}/**
+ * @param {(() => void)} fn
+ * @param {number} flags
+ */function block(e,n=0){return create_effect(RENDER_EFFECT|BLOCK_EFFECT|n,e,!0)}/**
+ * @param {(() => void)} fn
+ * @param {boolean} [push]
+ */function branch(e,n=!0){return create_effect(RENDER_EFFECT|BRANCH_EFFECT,e,!0,n)}/**
+ * @param {Effect} effect
+ */function execute_effect_teardown(e){var n=e.teardown;if(null!==n){const e=is_destroying_effect,d=active_reaction;set_is_destroying_effect(!0),set_active_reaction(null);try{n.call(null)}finally{set_is_destroying_effect(e),set_active_reaction(d)}}}/**
+ * @param {Effect} signal
+ * @returns {void}
+ */function destroy_effect_deriveds(e){var n=e.deriveds;if(null!==n){e.deriveds=null;for(var d=0;d<n.length;d+=1)destroy_derived(n[d])}}/**
+ * @param {Effect} signal
+ * @param {boolean} remove_dom
+ * @returns {void}
+ */function destroy_effect_children(e,n=!1){var d=e.first;for(e.first=e.last=null;null!==d;){var i=d.next;destroy_effect(d,n),d=i}}/**
+ * @param {Effect} signal
+ * @returns {void}
+ */function destroy_block_effect_children(e){for(var n=e.first;null!==n;){var d=n.next;0==(n.f&BRANCH_EFFECT)&&destroy_effect(n),n=d}}/**
+ * @param {Effect} effect
+ * @param {boolean} [remove_dom]
+ * @returns {void}
+ */function destroy_effect(e,n=!0){var d=!1;if((n||0!=(e.f&HEAD_EFFECT))&&null!==e.nodes_start){/** @type {TemplateNode | null} */for(var i=e.nodes_start,t=e.nodes_end;null!==i;){/** @type {TemplateNode | null} */var f=i===t?null:(/** @type {TemplateNode} */get_next_sibling(i));i.remove(),i=f}d=!0}destroy_effect_children(e,n&&!d),destroy_effect_deriveds(e),remove_reactions(e,0),set_signal_status(e,DESTROYED);var u=e.transitions;if(null!==u)for(const e of u)e.stop();execute_effect_teardown(e);var r=e.parent;// If the parent doesn't have any children, then skip this work altogether
+// `first` and `child` are nulled out in destroy_effect_children
+// we don't null out `parent` so that error propagation can work correctly
+null!==r&&null!==r.first&&unlink_effect(e),DEV&&(e.component_function=null),e.next=e.prev=e.teardown=e.ctx=e.deps=e.fn=e.nodes_start=e.nodes_end=null}/**
+ * Detach an effect from the effect tree, freeing up memory and
+ * reducing the amount of work that happens on subsequent traversals
+ * @param {Effect} effect
+ */function unlink_effect(e){var n=e.parent,d=e.prev,i=e.next;null!==d&&(d.next=i),null!==i&&(i.prev=d),null!==n&&(n.first===e&&(n.first=i),n.last===e&&(n.last=d))}/**
+ * When a block effect is removed, we don't immediately destroy it or yank it
+ * out of the DOM, because it might have transitions. Instead, we 'pause' it.
+ * It stays around (in memory, and in the DOM) until outro transitions have
+ * completed, and if the state change is reversed then we _resume_ it.
+ * A paused effect does not update, and the DOM subtree becomes inert.
+ * @param {Effect} effect
+ * @param {() => void} [callback]
+ */function pause_effect(e,n){/** @type {TransitionManager[]} */var d=[];pause_children(e,d,!0),run_out_transitions(d,()=>{destroy_effect(e),n&&n()})}/**
+ * @param {TransitionManager[]} transitions
+ * @param {() => void} fn
+ */function run_out_transitions(e,n){var d=e.length;if(0<d){var i=()=>--d||n();for(var t of e)t.out(i)}else n()}/**
+ * @param {Effect} effect
+ * @param {TransitionManager[]} transitions
+ * @param {boolean} local
+ */function pause_children(e,n,d){if(0==(e.f&INERT)){if(e.f^=INERT,null!==e.transitions)for(const i of e.transitions)(i.is_global||d)&&n.push(i);for(var i=e.first;null!==i;){var t=i.next,f=0!=(i.f&EFFECT_TRANSPARENT)||0!=(i.f&BRANCH_EFFECT);pause_children(i,n,!!f&&d),i=t}}}/**
+ * The opposite of `pause_effect`. We call this if (for example)
+ * `x` becomes falsy then truthy: `{#if x}...{/if}`
+ * @param {Effect} effect
+ */function resume_effect(e){resume_children(e,!0)}/**
+ * @param {Effect} effect
+ * @param {boolean} local
+ */function resume_children(e,n){if(0!=(e.f&INERT)){check_dirtiness(e)&&update_effect(e),e.f^=INERT;for(var d=e.first;null!==d;){var i=d.next,t=0!=(d.f&EFFECT_TRANSPARENT)||0!=(d.f&BRANCH_EFFECT);// TODO we don't need to call resume_children recursively with a linked list in place
+// it's slightly more involved though as we have to account for `transparent` changing
+// through the tree.
+resume_children(d,!!t&&n),d=i}if(null!==e.transitions)for(const d of e.transitions)(d.is_global||n)&&d.in()}// If a dependency of this effect changed while it was paused,
+// apply the change now
+}let is_micro_task_queued$1=!1,current_queued_micro_tasks=[];/** @type {Array<() => void>} */function process_micro_tasks(){is_micro_task_queued$1=!1;const e=current_queued_micro_tasks.slice();current_queued_micro_tasks=[],run_all(e)}/**
+ * @param {() => void} fn
+ */function queue_micro_task(e){is_micro_task_queued$1||(is_micro_task_queued$1=!0,queueMicrotask(process_micro_tasks)),current_queued_micro_tasks.push(e)}/**
+ * Synchronously run any queued tasks.
+ */function flush_tasks(){is_micro_task_queued$1&&process_micro_tasks()}/** @import { ComponentContext, Derived, Effect, Reaction, Signal, Source, Value } from '#client' */const FLUSH_MICROTASK=0,FLUSH_SYNC=1,handled_errors=new WeakSet;// Used for DEV time error handling
+/** @param {WeakSet<Error>} value */let is_throwing_error=!1,scheduler_mode=0,is_micro_task_queued=!1,last_scheduled_effect=null,is_flushing_effect=!1,is_destroying_effect=!1;// Used for controlling the flush of effects.
+// Used for handling scheduling
+/** @type {Effect | null} *//** @param {boolean} value */function set_is_flushing_effect(e){is_flushing_effect=e}/** @param {boolean} value */function set_is_destroying_effect(e){is_destroying_effect=e}// Handle effect queues
+/** @type {Effect[]} */let queued_root_effects=[],flush_count=0,dev_effect_stack=[],active_reaction=null;/** @type {Effect[]} Stack of effects, dev only */// Handle signal reactivity tree dependencies and reactions
+/** @type {null | Reaction} *//** @param {null | Reaction} reaction */function set_active_reaction(e){active_reaction=e}/** @type {null | Effect} */let active_effect=null;/** @param {null | Effect} effect */function set_active_effect(e){active_effect=e}/**
+ * When sources are created within a derived, we record them so that we can safely allow
+ * local mutations to these sources without the side-effect error being invoked unnecessarily.
+ * @type {null | Source[]}
+ */let derived_sources=null,new_deps=null,skipped_deps=0,untracked_writes=null;/**
+ * The dependencies of the reaction that is currently being executed. In many cases,
+ * the dependencies are unchanged between runs, and so this will be `null` unless
+ * and until a new dependency is accessed — we track this via `skipped_deps`
+ * @type {null | Value[]}
+ *//**
+ * Tracks writes that the effect it's executed in doesn't listen to yet,
+ * so that the dependency can be added to the effect later on if it then reads it
+ * @type {null | Source[]}
+ *//** @param {null | Source[]} value */function set_untracked_writes(e){untracked_writes=e}/**
+ * @type {number} Used by sources and deriveds for handling updates.
+ * Version starts from 1 so that unowned deriveds differentiate between a created effect and a run one for tracing
+ **/let write_version=1,read_version=0,skip_reaction=!1,component_context=null;/** @type {number} Used to version each read of a source of derived to avoid duplicating depedencies inside a reaction */// If we are working with a get() chain that has no active container,
+// to prevent memory leaks, we skip adding the reaction.
+// Handling runtime component context
+/** @type {ComponentContext | null} *//** @param {ComponentContext | null} context */function set_component_context(e){component_context=e}/**
+ * The current component function. Different from current component context:
+ * ```html
+ * <!-- App.svelte -->
+ * <Foo>
+ *   <Bar /> <!-- context == Foo.svelte, function == App.svelte -->
+ * </Foo>
+ * ```
+ * @type {ComponentContext['function']}
+ */let dev_current_component_function=null;/** @param {ComponentContext['function']} fn */function set_dev_current_component_function(e){dev_current_component_function=e}function increment_write_version(){return++write_version}/** @returns {boolean} */function is_runes(){return!legacy_mode_flag||null!==component_context&&null===component_context.l}/**
+ * Determines whether a derived or effect is dirty.
+ * If it is MAYBE_DIRTY, will set the status to CLEAN
+ * @param {Reaction} reaction
+ * @returns {boolean}
+ */function check_dirtiness(e){var n=e.f;if(0!=(n&DIRTY))return!0;if(0!=(n&MAYBE_DIRTY)){var d=e.deps,t=0!=(n&UNOWNED);if(null!==d){var f,u,r=0!=(n&DISCONNECTED),s=t&&null!==active_effect&&!skip_reaction,a=d.length;// If we are working with a disconnected or an unowned signal that is now connected (due to an active effect)
+// then we need to re-connect the reaction to the dependency
+if(r||s){for(f=0;f<a;f++)u=d[f],(r||!u?.reactions?.includes(e))&&(u.reactions??=[]).push(e);r&&(e.f^=DISCONNECTED)}for(f=0;f<a;f++)if(u=d[f],check_dirtiness(/** @type {Derived} */u)&&update_derived(/** @type {Derived} */u),u.wv>e.wv)return!0}// Unowned signals should never be marked as clean unless they
+// are used within an active_effect without skip_reaction
+t&&(null===active_effect||skip_reaction)||set_signal_status(e,CLEAN)}return!1}/**
+ * @param {unknown} error
+ * @param {Effect} effect
+ */function propagate_error(e,n){/** @type {Effect | null} */for(var d=n;null!==d;){if(0!=(d.f&BOUNDARY_EFFECT))try{return void d.fn(e)}catch{d.f^=BOUNDARY_EFFECT}d=d.parent}throw is_throwing_error=!1,e}/**
+ * @param {Effect} effect
+ */function should_rethrow_error(e){return 0==(e.f&DESTROYED)&&(null===e.parent||0==(e.parent.f&BOUNDARY_EFFECT))}/**
+ * @param {unknown} error
+ * @param {Effect} effect
+ * @param {Effect | null} previous_effect
+ * @param {ComponentContext | null} component_context
+ */function handle_error(e,n,d,i){if(is_throwing_error){if(null===d&&(is_throwing_error=!1),should_rethrow_error(n))throw e;return}if(null!==d&&(is_throwing_error=!0),!DEV||null===i||!(e instanceof Error)||handled_errors.has(e))return void propagate_error(e,n);handled_errors.add(e);const t=[],f=n.fn?.name;f&&t.push(f);for(/** @type {ComponentContext | null} */let f=i;null!==f;){if(DEV){/** @type {string} */var u=f.function?.[FILENAME];if(u){const e=u.split("/").pop();t.push(e)}}f=f.p}const r=/Firefox/.test(navigator.userAgent)?"  ":"\t";define_property(e,"message",{value:e.message+`\n${t.map(e=>`\n${r}in ${e}`).join("")}\n`}),define_property(e,"component_stack",{value:t});const s=e.stack;// Filter out internal files from callstack
+if(s){const n=s.split("\n"),d=[];for(let e=0;e<n.length;e++){const i=n[e];i.includes("svelte/src/internal")||d.push(i)}define_property(e,"stack",{value:d.join("\n")})}if(propagate_error(e,n),should_rethrow_error(n))throw e}/**
+ * @template V
+ * @param {Reaction} reaction
+ * @returns {V}
+ */function update_reaction(e){var n=new_deps,d=skipped_deps,t=untracked_writes,f=active_reaction,u=skip_reaction,r=derived_sources,s=component_context,a=e.f;new_deps=/** @type {null | Value[]} */null,skipped_deps=0,untracked_writes=null,active_reaction=0==(a&(BRANCH_EFFECT|ROOT_EFFECT))?e:null,skip_reaction=!is_flushing_effect&&0!=(a&UNOWNED),derived_sources=null,component_context=e.ctx,read_version++;try{var l=/** @type {Function} */(0,e.fn)(),o=e.deps;if(null!==new_deps){var p;if(remove_reactions(e,skipped_deps),null!==o&&0<skipped_deps)for(o.length=skipped_deps+new_deps.length,p=0;p<new_deps.length;p++)o[skipped_deps+p]=new_deps[p];else e.deps=o=new_deps;if(!skip_reaction)for(p=skipped_deps;p<o.length;p++)(o[p].reactions??=[]).push(e)}else null!==o&&skipped_deps<o.length&&(remove_reactions(e,skipped_deps),o.length=skipped_deps);// If we are returning to an previous reaction then
+// we need to increment the read version to ensure that
+// any dependencies in this reaction aren't marked with
+// the same version
+return null!==f&&read_version++,l}finally{new_deps=n,skipped_deps=d,untracked_writes=t,active_reaction=f,skip_reaction=u,derived_sources=r,component_context=s}}/**
+ * @template V
+ * @param {Reaction} signal
+ * @param {Value<V>} dependency
+ * @returns {void}
+ */function remove_reaction(e,n){let d=n.reactions;if(null!==d){var i=index_of.call(d,e);if(-1!==i){var t=d.length-1;0==t?d=n.reactions=null:(d[i]=d[t],d.pop())}}// If the derived has no reactions, then we can disconnect it from the graph,
+// allowing it to either reconnect in the future, or be GC'd by the VM.
+null!==d||0==(n.f&DERIVED)||// Destroying a child effect while updating a parent effect can cause a dependency to appear
+// to be unused, when in fact it is used by the currently-updating parent. Checking `new_deps`
+// allows us to skip the expensive work of disconnecting and immediately reconnecting it
+null!==new_deps&&new_deps.includes(n)||(set_signal_status(n,MAYBE_DIRTY),0==(n.f&(UNOWNED|DISCONNECTED))&&(n.f^=DISCONNECTED),remove_reactions(/** @type {Derived} **/n,0))}/**
+ * @param {Reaction} signal
+ * @param {number} start_index
+ * @returns {void}
+ */function remove_reactions(e,n){var d=e.deps;if(null!==d)for(var t=n;t<d.length;t++)remove_reaction(e,d[t])}/**
+ * @param {Effect} effect
+ * @returns {void}
+ */function update_effect(e){var n=e.f;if(0==(n&DESTROYED)){set_signal_status(e,CLEAN);var d=active_effect,i=component_context;if(active_effect=e,DEV){var t=dev_current_component_function;dev_current_component_function=e.component_function}try{0==(n&BLOCK_EFFECT)?destroy_effect_children(e):destroy_block_effect_children(e),destroy_effect_deriveds(e),execute_effect_teardown(e);var f=update_reaction(e);e.teardown="function"==typeof f?f:null,e.wv=write_version;var u=e.deps;// In DEV, we need to handle a case where $inspect.trace() might
+// incorrectly state a source dependency has not changed when it has.
+// That's beacuse that source was changed by the same effect, causing
+// the versions to match. We can avoid this by incrementing the version
+if(DEV&&tracing_mode_flag&&0!=(e.f&DIRTY)&&null!==u)for(let e=0;e<u.length;e++){var r=u[e];r.trace_need_increase&&(r.wv=increment_write_version(),r.trace_need_increase=void 0,r.trace_v=void 0)}DEV&&dev_effect_stack.push(e)}catch(n){handle_error(n,e,d,i||e.ctx)}finally{active_effect=d,DEV&&(dev_current_component_function=t)}}}function log_effect_stack(){// eslint-disable-next-line no-console
+console.error("Last ten effects were: ",dev_effect_stack.slice(-10).map(e=>e.fn)),dev_effect_stack=[]}function infinite_loop_guard(){if(1e3<flush_count){flush_count=0;try{effect_update_depth_exceeded()}catch(e){// Try and handle the error so it can be caught at a boundary, that's
+// if there's an effect available from when it was last scheduled
+if(DEV&&define_property(e,"stack",{value:""}),null===last_scheduled_effect)throw DEV&&log_effect_stack(),e;else if(DEV)try{handle_error(e,last_scheduled_effect,null,null)}catch(n){throw log_effect_stack(),n}else handle_error(e,last_scheduled_effect,null,null)}}flush_count++}/**
+ * @param {Array<Effect>} root_effects
+ * @returns {void}
+ */function flush_queued_root_effects(e){var n=e.length;if(0!==n){infinite_loop_guard();var d=is_flushing_effect;is_flushing_effect=!0;try{for(var t,f=0;f<n;f++){t=e[f],0==(t.f&CLEAN)&&(t.f^=CLEAN);/** @type {Effect[]} */var u=[];process_effects(t,u),flush_queued_effects(u)}}finally{is_flushing_effect=d}}}/**
+ * @param {Array<Effect>} effects
+ * @returns {void}
+ */function flush_queued_effects(e){var n=e.length;if(0!==n)for(var d,t=0;t<n;t++)if(d=e[t],0==(d.f&(DESTROYED|INERT)))try{check_dirtiness(d)&&(update_effect(d),null===d.deps&&null===d.first&&null===d.nodes_start&&(null===d.teardown?unlink_effect(d):d.fn=null))}catch(e){handle_error(e,d,null,d.ctx)}}function process_deferred(){if(is_micro_task_queued=!1,!(1001<flush_count)){const e=queued_root_effects;queued_root_effects=[],flush_queued_root_effects(e),is_micro_task_queued||(flush_count=0,last_scheduled_effect=null,DEV&&(dev_effect_stack=[]))}}/**
+ * @param {Effect} signal
+ * @returns {void}
+ */function schedule_effect(e){scheduler_mode!==FLUSH_MICROTASK||is_micro_task_queued||(is_micro_task_queued=!0,queueMicrotask(process_deferred)),last_scheduled_effect=e;for(var n=e;null!==n.parent;){n=n.parent;var d=n.f;if(0!=(d&(ROOT_EFFECT|BRANCH_EFFECT))){if(0==(d&CLEAN))return;n.f^=CLEAN}}queued_root_effects.push(n)}/**
+ *
+ * This function both runs render effects and collects user effects in topological order
+ * from the starting effect passed in. Effects will be collected when they match the filtered
+ * bitwise flag passed in only. The collected effects array will be populated with all the user
+ * effects to be flushed.
+ *
+ * @param {Effect} effect
+ * @param {Effect[]} collected_effects
+ * @returns {void}
+ */function process_effects(e,n){var d=e.first,t=[];main_loop:for(;null!==d;){var f=d.f,u=0!=(f&BRANCH_EFFECT),r=u&&0!=(f&CLEAN),s=d.next;if(!r&&0==(f&INERT))if(0!=(f&RENDER_EFFECT)){if(u)d.f^=CLEAN;else try{check_dirtiness(d)&&update_effect(d)}catch(e){handle_error(e,d,null,d.ctx)}var a=d.first;if(null!==a){d=a;continue}}else 0!=(f&EFFECT)&&t.push(d);if(null===s)for(let n=d.parent;null!==n;){if(e===n)break main_loop;var l=n.next;if(null!==l){d=l;continue main_loop}n=n.parent}d=s}// We might be dealing with many effects here, far more than can be spread into
+// an array push call (callstack overflow). So let's deal with each effect in a loop.
+for(var o=0;o<t.length;o++)a=t[o],n.push(a),process_effects(a,n)}/**
+ * Internal version of `flushSync` with the option to not flush previous effects.
+ * Returns the result of the passed function, if given.
+ * @param {() => any} [fn]
+ * @returns {any}
+ */function flush_sync(e){var n=scheduler_mode,d=queued_root_effects;try{infinite_loop_guard();/** @type {Effect[]} */const n=[];scheduler_mode=FLUSH_SYNC,queued_root_effects=n,is_micro_task_queued=!1,flush_queued_root_effects(d);var i=e?.();return flush_tasks(),(0<queued_root_effects.length||0<n.length)&&flush_sync(),flush_count=0,last_scheduled_effect=null,DEV&&(dev_effect_stack=[]),i}finally{scheduler_mode=n,queued_root_effects=d}}/**
+ * @template V
+ * @param {Value<V>} signal
+ * @returns {V}
+ */function get(e){var n=e.f,d=0!=(n&DERIVED);// If the derived is destroyed, just execute it again without retaining
+// its memoisation properties as the derived is stale
+if(d&&0!=(n&DESTROYED)){var i=execute_derived(/** @type {Derived} */e);// Ensure the derived remains destroyed
+return destroy_derived(/** @type {Derived} */e),i}// Register the dependency on the current reaction signal.
+if(null!==active_reaction){null!==derived_sources&&derived_sources.includes(e)&&state_unsafe_local_read();var t=active_reaction.deps;e.rv<read_version&&(e.rv=read_version,null===new_deps&&null!==t&&t[skipped_deps]===e?skipped_deps++:null===new_deps?new_deps=[e]:new_deps.push(e),null!==untracked_writes&&null!==active_effect&&0!=(active_effect.f&CLEAN)&&0==(active_effect.f&BRANCH_EFFECT)&&untracked_writes.includes(e)&&(set_signal_status(active_effect,DIRTY),schedule_effect(active_effect)))}else if(d&&/** @type {Derived} */null===e.deps)for(var f=/** @type {Derived} */e,u=f.parent,r=f;null!==u;)// Attach the derived to the nearest parent effect, if there are deriveds
+// in between then we also need to attach them too
+if(0!=(u.f&DERIVED)){var s=/** @type {Derived} */u;r=s,u=s.parent}else{var a=/** @type {Effect} */u;a.deriveds?.includes(r)||(a.deriveds??=[]).push(r);break}if(d&&(f=/** @type {Derived} */e,check_dirtiness(f)&&update_derived(f)),DEV&&tracing_mode_flag&&!1&&null!==active_reaction&&tracing_expressions.reaction===active_reaction)// Used when mapping state between special blocks like `each`
+if(e.debug)e.debug();else if(e.created){var l=tracing_expressions.entries.get(e);void 0===l&&(l={read:[]},tracing_expressions.entries.set(e,l)),l.read.push(get_stack$1("TracedAt"))}return e.v}/**
+ * When used inside a [`$derived`](https://svelte.dev/docs/svelte/$derived) or [`$effect`](https://svelte.dev/docs/svelte/$effect),
+ * any state read inside `fn` will not be treated as a dependency.
+ *
+ * ```ts
+ * $effect(() => {
+ *   // this will run when `data` changes, but not when `time` changes
+ *   save(data, {
+ *     timestamp: untrack(() => time)
+ *   });
+ * });
+ * ```
+ * @template T
+ * @param {() => T} fn
+ * @returns {T}
+ */function untrack(e){const n=active_reaction;try{return active_reaction=null,e()}finally{active_reaction=n}}const STATUS_MASK=~(DIRTY|MAYBE_DIRTY|CLEAN);/**
+ * @param {Signal} signal
+ * @param {number} status
+ * @returns {void}
+ */function set_signal_status(e,n){e.f=e.f&STATUS_MASK|n}/**
+ * @param {Record<string, unknown>} props
+ * @param {any} runes
+ * @param {Function} [fn]
+ * @returns {void}
+ */function push(e,n=!1,d){component_context={p:component_context,c:null,e:null,m:!1,s:e,x:null,l:null},legacy_mode_flag&&!n&&(component_context.l={s:null,u:null,r1:[],r2:source(!1)}),DEV&&(component_context.function=d,dev_current_component_function=d)}/**
+ * @template {Record<string, any>} T
+ * @param {T} [component]
+ * @returns {T}
+ */function pop(e){const n=component_context;if(null!==n){e!==void 0&&(n.x=e);const i=n.e;if(null!==i){var d=active_effect,t=active_reaction;n.e=null;try{for(var f,u=0;u<i.length;u++)f=i[u],set_active_effect(f.effect),set_active_reaction(f.reaction),effect(f.fn)}finally{set_active_effect(d),set_active_reaction(t)}}component_context=n.p,DEV&&(dev_current_component_function=n.p?.function??null),n.m=!0}// Micro-optimization: Don't set .a above to the empty object
+// so it can be garbage-collected when the return here is unused
+return e||(/** @type {T} */{})}/**
+ * Possibly traverse an object and read all its properties so that they're all reactive in case this is `$state`.
+ * Does only check first level of an object for performance reasons (heuristic should be good for 99% of all cases).
+ * @param {any} value
+ * @returns {void}
+ */function deep_read_state(e){if("object"==typeof e&&e&&!(e instanceof EventTarget))if(STATE_SYMBOL in e)deep_read(e);else if(!Array.isArray(e))for(let n in e){const d=e[n];"object"==typeof d&&d&&STATE_SYMBOL in d&&deep_read(d)}}/**
+ * Deeply traverse an object and read all its properties
+ * so that they're all reactive in case this is `$state`
+ * @param {any} value
+ * @param {Set<any>} visited
+ * @returns {void}
+ */function deep_read(e,n=new Set){if("object"==typeof e&&null!==e&&// We don't want to traverse DOM elements
+!(e instanceof EventTarget)&&!n.has(e)){for(let d in n.add(e),e instanceof Date&&e.getTime(),e)try{deep_read(e[d],n)}catch(n){// continue
+}const d=get_prototype_of(e);if(d!==Object.prototype&&d!==Array.prototype&&d!==Map.prototype&&d!==Set.prototype&&d!==Date.prototype){const n=get_descriptors(d);for(let d in n){const i=n[d].get;if(i)try{i.call(e)}catch(n){// continue
+}}}}}if(DEV){/**
+	 * @param {string} rune
+	 */function e(e){if(!(e in globalThis)){// TODO if people start adjusting the "this can contain runes" config through v-p-s more, adjust this message
+/** @type {any} */let n;// let's hope noone modifies this global, but belts and braces
+Object.defineProperty(globalThis,e,{configurable:!0,// eslint-disable-next-line getter-return
+get:()=>void 0===n?void rune_outside_svelte(e):n,set:e=>{n=e}})}}e("$state"),e("$effect"),e("$derived"),e("$inspect"),e("$props"),e("$bindable")}/** @param {string} html */function create_fragment_from_html(e){var n=document.createElement("template");return n.innerHTML=e,n.content}/** @import { Effect, TemplateNode } from '#client' *//**
+ * @param {TemplateNode} start
+ * @param {TemplateNode | null} end
+ */function assign_nodes(e,n){var d=/** @type {Effect} */active_effect;null===d.nodes_start&&(d.nodes_start=e,d.nodes_end=n)}/**
+ * @param {string} content
+ * @param {number} flags
+ * @returns {() => Node | Node[]}
+ *//*#__NO_SIDE_EFFECTS__*/function template(e,n){var d,i=0!=(n&TEMPLATE_FRAGMENT),t=0!=(n&TEMPLATE_USE_IMPORT_NODE),f=!e.startsWith("<!>");/** @type {Node} *//**
+	 * Whether or not the first item is a text/element node. If not, we need to
+	 * create an additional comment node to act as `effect.nodes.start`
+	 */return()=>{d===void 0&&(d=create_fragment_from_html(f?e:"<!>"+e),!i&&(d=/** @type {Node} */get_first_child(d)));var n=/** @type {TemplateNode} */t?document.importNode(d,!0):d.cloneNode(!0);if(i){var u=/** @type {TemplateNode} */get_first_child(n),r=/** @type {TemplateNode} */n.lastChild;assign_nodes(u,r)}else assign_nodes(n,n);return n}}/**
+ * Assign the created (or in hydration mode, traversed) dom elements to the current block
+ * and insert the elements into the dom (in client mode).
+ * @param {Text | Comment | Element} anchor
+ * @param {DocumentFragment | Element} dom
+ */function append(e,n){null===e||e.before(/** @type {Node} */n)}/** @import { Effect, Source, TemplateNode } from '#client' */const PENDING=0,THEN=1,CATCH=2;/**
+ * @template V
+ * @param {TemplateNode} node
+ * @param {(() => Promise<V>)} get_input
+ * @param {null | ((anchor: Node) => void)} pending_fn
+ * @param {null | ((anchor: Node, value: Source<V>) => void)} then_fn
+ * @param {null | ((anchor: Node, error: unknown) => void)} catch_fn
+ * @returns {void}
+ */function await_block(e,n,d,i,t){/**
+	 * @param {PENDING | THEN | CATCH} state
+	 * @param {boolean} restore
+	 */function f(e,n){g=!0,n&&(set_active_effect(m),set_active_reaction(m),set_component_context(o),DEV&&set_dev_current_component_function(p));try{e===PENDING&&d&&(u?resume_effect(u):u=branch(()=>d(a))),e===THEN&&i&&(r?resume_effect(r):r=branch(()=>i(a,h))),e===CATCH&&t&&(s?resume_effect(s):s=branch(()=>t(a,v))),e!==PENDING&&u&&pause_effect(u,()=>u=null),e!==THEN&&r&&pause_effect(r,()=>r=null),e!==CATCH&&s&&pause_effect(s,()=>s=null)}finally{n&&(DEV&&set_dev_current_component_function(null),set_component_context(null),set_active_reaction(null),set_active_effect(null),flush_sync())}}var u,r,s,a=e,l=is_runes(),o=component_context,p=DEV?component_context?.function:null,c=UNINITIALIZED,h=(l?source:mutable_source)(void 0),v=(l?source:mutable_source)(void 0),g=!1,m=block(()=>{if(c!==(c=n())){if(is_promise(c)){var e=c;g=!1,e.then(n=>{e!==c||(// we technically could use `set` here since it's on the next microtick
+// but let's use internal_set for consistency and just to be safe
+internal_set(h,n),f(THEN,!0))},n=>{if(e===c&&(internal_set(v,n),f(CATCH,!0),!t))// Rethrow the error if no catch block exists
+throw v.v;// we technically could use `set` here since it's on the next microtick
+// but let's use internal_set for consistency and just to be safe
+}),// Wait a microtask before checking if we should show the pending state as
+// the promise might have resolved by the next microtask.
+queue_micro_task(()=>{g||f(PENDING,!0)})}else internal_set(h,c),f(THEN,!1);// Set the input to something else, in order to disable the promise callbacks
+return()=>c=UNINITIALIZED}});/** @type {any} *//** @type {V | Promise<V> | typeof UNINITIALIZED} *//** @type {Effect | null} *//** @type {Effect | null} *//** @type {Effect | null} */}/**
+ * @param {Element} element
+ * @param {string} attribute
+ * @param {string | null} value
+ * @param {boolean} [skip_warning]
+ */function set_attribute(e,n,d,i){// @ts-expect-error
+var t=e.__attributes??={};t[n]===(t[n]=d)||("style"===n&&"__styles"in e&&(e.__styles={}),"loading"===n&&(e[LOADING_ATTR_SYMBOL]=d),null==d?e.removeAttribute(n):"string"!=typeof d&&get_setters(e).includes(n)?e[n]=d:e.setAttribute(n,d))}/** @type {Map<string, string[]>} */var setters_cache=new Map;/** @param {Element} element */function get_setters(e){var n=setters_cache.get(e.nodeName);if(n)return n;setters_cache.set(e.nodeName,n=[]);// In the case of custom elements there might be setters on the instance
+// Stop at Element, from there on there's only unnecessary setters we're not interested in
+// Do not use contructor.name here as that's unreliable in some browser environments
+for(var d,i=e,t=Element.prototype;t!==i;){for(var f in d=get_descriptors(i),d)d[f].set&&n.push(f);i=get_prototype_of(i)}return n}/**
+ * @param {HTMLElement} dom
+ * @param {string} value
+ * @param {string} [hash]
+ * @returns {void}
+ */function set_class(e,n,d){// @ts-expect-error need to add __className to patched prototype
+var i=e.__className,t=to_class(n,d);(i!==t||hydrating)&&(null!=n||d?e.className=t:e.removeAttribute("class"),e.__className=t)}/**
+ * @template V
+ * @param {V} value
+ * @param {string} [hash]
+ * @returns {string | V}
+ */function to_class(e,n){return(null==e?"":e)+(n?" "+n:"")}/** @import { ComponentContextLegacy } from '#client' *//**
+ * Legacy-mode only: Call `onMount` callbacks and set up `beforeUpdate`/`afterUpdate` effects
+ * @param {boolean} [immutable]
+ */function init(e=!1){const n=/** @type {ComponentContextLegacy} */component_context,d=n.l.u;if(!d)return;let i=()=>deep_read_state(n.s);if(e){let e=0,t=/** @type {Record<string, any>} */{};// In legacy immutable mode, before/afterUpdate only fire if the object identity of a prop changes
+const f=derived(()=>{let d=!1;const i=n.s;for(const e in i)i[e]!==t[e]&&(t[e]=i[e],d=!0);return d&&e++,e});i=()=>get(f)}// beforeUpdate
+// onMount (must run before afterUpdate)
+d.b.length&&user_pre_effect(()=>{observe_all(n,i),run_all(d.b)}),user_effect(()=>{const e=untrack(()=>d.m.map(run));return()=>{for(const n of e)"function"==typeof n&&n()}}),d.a.length&&user_effect(()=>{observe_all(n,i),run_all(d.a)})}/**
+ * Invoke the getter of all signals associated with a component
+ * so they can be registered to the effect this function is called in.
+ * @param {ComponentContextLegacy} context
+ * @param {(() => void)} props
+ */function observe_all(e,n){if(e.l.s)for(const n of e.l.s)get(n);n()}/** @import { StoreReferencesContainer } from '#client' *//**
+ * Whether or not the prop currently being read is a store binding, as in
+ * `<Child bind:x={$y} />`. If it is, we treat the prop as mutable even in
+ * runes mode, and skip `binding_property_non_reactive` validation
+ */let is_store_binding=!1;/**
+ * Returns a tuple that indicates whether `fn()` reads a prop that is a store binding.
+ * Used to prevent `binding_property_non_reactive` validation false positives and
+ * ensure that these props are treated as mutable even in runes mode
+ * @template T
+ * @param {() => T} fn
+ * @returns {[T, boolean]}
+ */function capture_store_binding(e){var n=is_store_binding;try{return is_store_binding=!1,[e(),is_store_binding]}finally{is_store_binding=n}}/** @import { Source } from './types.js' *//**
+ * @template T
+ * @param {() => T} fn
+ * @returns {T}
+ */function with_parent_branch(e){for(var n=active_effect,d=active_effect;null!==n&&0==(n.f&(BRANCH_EFFECT|ROOT_EFFECT));)n=n.parent;try{return set_active_effect(n),e()}finally{set_active_effect(d)}}/**
+ * This function is responsible for synchronizing a possibly bound prop with the inner component state.
+ * It is used whenever the compiler sees that the component writes to the prop, or when it has a default prop_value.
+ * @template V
+ * @param {Record<string, unknown>} props
+ * @param {string} key
+ * @param {number} flags
+ * @param {V | (() => V)} [fallback]
+ * @returns {(() => V | ((arg: V) => V) | ((arg: V, mutation: boolean) => V))}
+ */function prop(e,n,d,i){var t,f=0!=(d&PROPS_IS_IMMUTABLE),u=!legacy_mode_flag||0!=(d&PROPS_IS_RUNES),r=0!=(d&PROPS_IS_BINDABLE),s=0!=(d&PROPS_IS_LAZY_INITIAL),a=!1;r?[t,a]=capture_store_binding(()=>(/** @type {V} */e[n])):t=/** @type {V} */e[n];// Can be the case when someone does `mount(Component, props)` with `let props = $state({...})`
+// or `createClassComponent(Component, props)`
+var l=STATE_SYMBOL in e||LEGACY_PROPS in e,o=r&&(get_descriptor(e,n)?.set??(l&&n in e&&(d=>e[n]=d)))||void 0,p=/** @type {V} */i,c=!0,h=!1,v=()=>(h=!0,c&&(c=!1,p=s?untrack(/** @type {() => V} */i):(/** @type {V} */i)),p);void 0===t&&void 0!==i&&(o&&u&&props_invalid_value(n),t=v(),o&&o(t));/** @type {() => V} */var g;if(u)g=()=>{var d=/** @type {V} */e[n];return void 0===d?v():(c=!0,h=!1,d)};else{// Svelte 4 did not trigger updates when a primitive value was updated to the same value.
+// Replicate that behavior through using a derived
+var m=with_parent_branch(()=>(f?derived:derived_safe_equal)(()=>(/** @type {V} */e[n])));m.f|=LEGACY_DERIVED_PROP,g=()=>{var e=get(m);return void 0!==e&&(p=void 0),void 0===e?p:e}}// easy mode — prop is never written to
+if(0==(d&PROPS_IS_UPDATED))return g;// intermediate mode — prop is written to, but the parent component had
+// `bind:foo` which means we can just call `$$props.foo = value` directly
+if(o){var w=e.$$legacy;return function(/** @type {any} */e,/** @type {boolean} */n){return 0<arguments.length?((!u||!n||w||a)&&o(n?g():e),e):g()}}// hard mode. this is where it gets ugly — the value in the child should
+// synchronize with the parent, but it should also be possible to temporarily
+// set the value to something else locally.
+var _=!1,y=!1,b=mutable_source(t),x=with_parent_branch(()=>derived(()=>{var e=g(),n=get(b);return _?(_=!1,y=!0,n):(y=!1,b.v=e)}));// The derived returns the current value. The underlying mutable
+// source is written to from various places to persist this value.
+return f||(x.equals=safe_equals),function(/** @type {any} */e,/** @type {boolean} */n){if(0<arguments.length){const d=n?get(x):u&&r?proxy(e):e;return x.equals(d)||(_=!0,set(b,d),h&&void 0!==p&&(p=d),untrack(()=>get(x))),e}return get(x)}}function __variableDynamicImportRuntime0__(e){return new Promise(function(n,d){("function"==typeof queueMicrotask?queueMicrotask:setTimeout)(d.bind(null,new Error("Unknown variable dynamic import: "+e)))})}var root_1=template(`<img class="svelte-12fj8qt">`),root=template(`<div><!></div>`);function Flag_1(e,n){async function d(e,n){return __variableDynamicImportRuntime0__(`./dist/flags/${e}/${n}.svg`).then(e=>e.default)}push(n,!1);let i=prop(n,"code",8,"NL"),t=prop(n,"size",12,"m"),f=prop(n,"gradient",12,""),u=prop(n,"hasBorder",8,!0),r=prop(n,"hasDropShadow",8,!1),s=prop(n,"hasBorderRadius",8,!0),a=prop(n,"class",8);const l=e=>e.toLowerCase();legacy_pre_effect(()=>deep_read_state(f()),()=>{f(l(f()))}),legacy_pre_effect(()=>deep_read_state(t()),()=>{t(l(t()))}),legacy_pre_effect_reset(),init();var o=root();const p=derived_safe_equal(()=>`${`
   flag
-  ${/*gradient*/a[1]}
-  size-${/*size*/a[0]}
-  ${/*hasBorder*/a[3]?"border":""}
-  ${/*hasDropShadow*/a[4]?"drop-shadow":""}
-  ${/*hasBorderRadius*/a[5]?"border-radius":""}
-  ${/*className*/a[6]?/*className*/a[6].replace(/\s\s+/g," ").trim():""}
-`)+" svelte-1rxzg3v"))},m(a,c){insert(a,b,c),e.block.m(b,e.anchor=null),e.mount=()=>b,e.anchor=null},p(f,[g]){if(a=f,e.ctx=a,/*size, code*/5&g&&c!==(c=/*importFlag*/a[7](/*size*/a[0],/*code*/a[2]))&&handle_promise(c,e));else update_await_block_branch(e,a,g);/*gradient, size, hasBorder, hasDropShadow, hasBorderRadius, className*/123&g&&d!==(d=""+(null_to_empty(`
-  flag
-  ${/*gradient*/a[1]}
-  size-${/*size*/a[0]}
-  ${/*hasBorder*/a[3]?"border":""}
-  ${/*hasDropShadow*/a[4]?"drop-shadow":""}
-  ${/*hasBorderRadius*/a[5]?"border-radius":""}
-  ${/*className*/a[6]?/*className*/a[6].replace(/\s\s+/g," ").trim():""}
-`)+" svelte-1rxzg3v"))&&attr(b,"class",d)},i:noop,o:noop,d(a){a&&detach(b),e.block.d(),e.token=null,e=null}}}function instance(a,b,c){async function d(a,b){return __variableDynamicImportRuntime0__(`./dist/flags/${a}/${b}.svg`).then(a=>a.default)}let{code:e="NL"}=b,{size:f="m"}=b,{gradient:g=""}=b,{hasBorder:h=!0}=b,{hasDropShadow:i=!1}=b,{hasBorderRadius:j=!0}=b,{class:k}=b;const l=a=>a.toLowerCase();let m;return a.$$set=a=>{"code"in a&&c(2,e=a.code),"size"in a&&c(0,f=a.size),"gradient"in a&&c(1,g=a.gradient),"hasBorder"in a&&c(3,h=a.hasBorder),"hasDropShadow"in a&&c(4,i=a.hasDropShadow),"hasBorderRadius"in a&&c(5,j=a.hasBorderRadius),"class"in a&&c(6,k=a.class)},a.$$.update=()=>{/*gradient*/2&a.$$.dirty&&c(1,g=l(g)),/*size*/1&a.$$.dirty&&c(0,f=l(f))},[f,g,e,h,i,j,k,d,m]}class Flag_1 extends SvelteComponent{constructor(a){super(),init(this,a,instance,create_fragment,safe_not_equal,{code:2,size:0,gradient:1,hasBorder:3,hasDropShadow:4,hasBorderRadius:5,class:6},add_css)}}export{Flag_1 as default};
+  ${f()}
+  size-${t()}
+  ${u()?"border":""}
+  ${r()?"drop-shadow":""}
+  ${s()?"border-radius":""}
+  ${a()?a().replace(/\s\s+/g," ").trim():""}
+`??""} svelte-12fj8qt`);var c=child(o);await_block(c,()=>d(t(),i()),null,(e,n)=>{var d=root_1();template_effect(()=>{set_attribute(d,"src",get(n)),set_attribute(d,"alt",`Flag of ${i()}`)}),append(e,d)}),template_effect(()=>set_class(o,get(p))),append(e,o),pop()}export{Flag_1 as default};

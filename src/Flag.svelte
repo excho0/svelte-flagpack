@@ -49,7 +49,6 @@
   box-sizing: border-box;
 }
 
-// Flag
 .flag {
   display: inline-block;
   overflow: hidden;

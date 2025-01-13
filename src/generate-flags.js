@@ -18,10 +18,9 @@ const createDist = () => {
 
   // Create flags folder and subdirectories
   function createFlagsDirectory() {
-    fs.mkdir(distDir, (err) => {
-      if(err) throw err
-      console.log('created flags folder')
-    })
+    fs.mkdir('./dist/flags', { recursive: true }, (err) => {
+      if (err && err.code !== 'EEXIST') throw err;
+    });    
   }
 
   function createSizeDirectoies() {
