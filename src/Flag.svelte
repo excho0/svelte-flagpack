@@ -1,25 +1,31 @@
-<script>
-  import { onMount } from 'svelte';
+<script lang="ts">
+  export let code: string = "NL";
+  export let size: 's' | 'm' | 'l' = "m";
+  export let gradient: '' | 'top-down' | 'real-linear' | 'real-circular' = '';
+  export let hasBorder: boolean = true;
+  export let hasDropShadow: boolean = false;
+  export let hasBorderRadius: boolean = true;
+  export let className: string | undefined;
+  export { className as class };
 
-  export let code = "NL"
-  export let size = "m"
-  export let gradient = ''
-  export let hasBorder = true
-  export let hasDropShadow = false
-  export let hasBorderRadius = true
-  let className
-  export { className as class }
+  const lower = (q: string): string => q.toLowerCase();
+  $: gradient = lower(gradient) as '' | 'top-down' | 'real-linear' | 'real-circular';
+  $: size = lower(size) as 's' | 'm' | 'l';
 
-  const lower = (q) => q.toLowerCase()
-  $: gradient = lower(gradient)
-  $: size = lower(size)
+  let Flag: string | undefined;
 
-  let Flag
+  async function importFlag(size: string, code: string): Promise<string> {
+    try {
+        const module = await import(`./flags/${size}/${code}.svg`);
+        Flag = module.default;
+        console.log(`Imported flag for ${code} size ${size}:`, Flag);
+        return Flag ?? ''; // Ensure a string is always returned
+    } catch (error) {
+        console.error(`Error importing flag SVG for ${code} of size ${size}:`, error);
+        throw new Error(`Failed to import flag for ${code}`);
+    }
+}
 
-  async function importFlag (size, code){
-    return import(`./dist/flags/${size}/${code}.svg`)
-    .then(res => res.default)
-  }
 </script>
 
 <div class={`
@@ -33,12 +39,14 @@
 `}>
 
   {#await importFlag(size, code) then Flag}
-    <img src="{Flag}" alt={`Flag of ${code}`}/>
+    <img src="{Flag}" alt={`Flag of ${code}`} />
+     {:catch error}
+    <div class="error">Failed to load flag.</div>
   {/await}
 
 </div>
 
-<style type="text/scss">
+<style lang="scss">
  @mixin before-styling {
   content: '';
   width: 100%;

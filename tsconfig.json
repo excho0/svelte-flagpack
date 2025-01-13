@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "target": "ES6",
+        "module": "ESNext",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "declaration": true,
+        "declarationDir": "./dist/types",
+        "outDir": "./dist",
+        "moduleResolution": "Node",
+        "baseUrl": "./",
+        "resolveJsonModule": true,
+        "allowSyntheticDefaultImports": true,
+        "types": ["node"],
+        "jsx": "preserve",
+        "allowJs": true,
+        "verbatimModuleSyntax": true
+    },
+    "include": ["src/**/*", "types/**/*"]
+}

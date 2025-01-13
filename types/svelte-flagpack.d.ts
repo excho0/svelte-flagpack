@@ -44,6 +44,4 @@ export interface FlagProps {
     gradient?: 'top-down' | 'real-linear' | 'real-circular';
 }
 
-declare class Flag extends SvelteComponent<FlagProps> {}
-
-export default Flag;
+export default class Flag extends SvelteComponent<FlagProps> {}

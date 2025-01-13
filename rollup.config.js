@@ -1,11 +1,13 @@
 import svelte from 'rollup-plugin-svelte';
 import resolve from '@rollup/plugin-node-resolve';
-import svg from 'rollup-plugin-svg';
 import commonjs from '@rollup/plugin-commonjs';
-import sveltePreprocess from 'svelte-preprocess';
+import { sveltePreprocess } from 'svelte-preprocess';
 import dynamicImportVars from '@rollup/plugin-dynamic-import-vars';
 import minify from 'rollup-plugin-babel-minify';
 import replace from '@rollup/plugin-replace';
+import typescript from '@rollup/plugin-typescript';
+import url from '@rollup/plugin-url';
+import path from 'path';
 
 const pkg = require('./package.json');
 
@@ -15,8 +17,9 @@ const env = process.env.NODE_ENV === prod || process.env.NODE_ENV === dev ? proc
 
 const plugins = [
   svelte({
-    emitCss: true,
+    emitCss: false,
     preprocess: sveltePreprocess({
+      typescript: true,
       scss: {
         implementation: require('sass'),
       },
@@ -24,12 +27,24 @@ const plugins = [
   }),
   replace({
     'process.env.NODE_ENV': JSON.stringify(env),
-    preventAssignment: true, // Required for modern Rollup plugins
+    preventAssignment: true,
   }),
-  svg({ base64: true }),
+  url({
+    include: ['**/*.svg'],
+    limit: Infinity, // Always inline SVGs as base64
+    emitFiles: false, // Do not emit separate files
+  }),
   dynamicImportVars(),
-  resolve(),
+  resolve({
+    browser: true,
+    dedupe: ['svelte'],
+  }),
   commonjs(),
+  typescript({
+    tsconfig: './tsconfig.json',
+    sourceMap: !prod,
+    inlineSources: !prod,
+  }),
 ];
 
 if (env === prod) {
@@ -37,19 +52,22 @@ if (env === prod) {
 }
 
 export default {
-  input: 'src/index.js', // Entry point
+  input: 'src/index.ts', // Ensure this exports the Flag component
   output: [
     {
-      file: 'dist/index.mjs',
+      file: path.resolve(__dirname, pkg.module),
       format: 'es',
+      sourcemap: !prod,
       inlineDynamicImports: true,
     },
     {
-      file: 'dist/index.js',
+      file: path.resolve(__dirname, pkg.main),
       format: 'iife',
       name: 'Flag',
+      sourcemap: !prod,
       inlineDynamicImports: true,
     },
   ],
   plugins,
+  external: ['svelte'],
 };
