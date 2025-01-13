@@ -2,7 +2,7 @@ import svelte from 'rollup-plugin-svelte';
 import resolve from '@rollup/plugin-node-resolve';
 import svg from 'rollup-plugin-svg';
 import commonjs from '@rollup/plugin-commonjs';
-import { sveltePreprocess } from 'svelte-preprocess';
+import sveltePreprocess from 'svelte-preprocess';
 import dynamicImportVars from '@rollup/plugin-dynamic-import-vars';
 import minify from 'rollup-plugin-babel-minify';
 import replace from '@rollup/plugin-replace';
@@ -15,14 +15,17 @@ const env = process.env.NODE_ENV === prod || process.env.NODE_ENV === dev ? proc
 
 const plugins = [
   svelte({
-    emitCss: false,
+    emitCss: true,
     preprocess: sveltePreprocess({
       scss: {
         implementation: require('sass'),
       },
     }),
   }),
-  replace({ 'process.env.NODE_ENV': JSON.stringify(env) }),
+  replace({
+    'process.env.NODE_ENV': JSON.stringify(env),
+    preventAssignment: true, // Required for modern Rollup plugins
+  }),
   svg({ base64: true }),
   dynamicImportVars(),
   resolve(),
@@ -34,16 +37,16 @@ if (env === prod) {
 }
 
 export default {
-  input: 'src/Flag.svelte',
+  input: 'src/index.js', // Entry point
   output: [
     {
-      file: pkg.module,
-      format: 'es', // Retain ESM format for modern usage
+      file: 'dist/index.mjs',
+      format: 'es',
       inlineDynamicImports: true,
     },
     {
-      file: pkg.main,
-      format: 'iife', // Use 'iife' for UMD-style bundling
+      file: 'dist/index.js',
+      format: 'iife',
       name: 'Flag',
       inlineDynamicImports: true,
     },
