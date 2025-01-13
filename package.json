@@ -4,6 +4,7 @@
   "description": "Gorgeous flag components for your Svelte project.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
+  "types": "./types/svelte-flagpack.d.ts", 
   "exports": {
     ".": {
       "svelte": "./dist/index.js"
